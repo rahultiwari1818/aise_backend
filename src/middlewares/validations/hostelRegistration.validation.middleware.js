@@ -17,7 +17,7 @@ export const validateHostelRegistration = async (req, res, next) => {
     const min = new Date("2026-01-06");
     const max = new Date("2026-01-11");
 
-    if (from < min || to > max || from >= to) {
+    if (from < min || to > max || from > to) {
       return res.status(400).json({
         error:
           "Dates must be between Jan 6 and Jan 11, 2026, and From Date should be earlier than To Date.",

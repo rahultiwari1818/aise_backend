@@ -60,55 +60,128 @@ export const loginAdmin = async (req, res) => {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 2 days
     });
 
-   return res.status(200).json({ message: "Login successful." });
+    return res.status(200).json({ message: "Login successful." });
   } catch (error) {
     console.error("Admin Login failed:", error);
     return res.status(500).json({ error: "Internal server error." });
   }
 };
 
-export const getAllUsers = async (req, res) => {
+export const logout = async (req, res) => {
   try {
-    const [rows] = await db.execute(
-      "SELECT * FROM registrations ORDER BY created_at DESC"
-    );
-    res.status(200).json({ data: rows });
+    res.clearCookie("adminToken", {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production", // use true in production (HTTPS)
+      sameSite: "Lax", // or "None" if frontend is on different domain and served over HTTPS
+    });
+
+    return res.status(200).json({
+        message:"Logged Out Successfully!"
+    })
+
   } catch (error) {
-    console.error("Getting All Users failed:", error);
+    console.error("Admin Logout failed:", error);
     return res.status(500).json({ error: "Internal server error." });
   }
 };
 
+export const getAllUsers = async (req, res) => {
+  try {
+    const { search } = req.query;
+
+    let query = "SELECT * FROM registrations";
+    let values = [];
+
+    if (search) {
+      query += ` WHERE 
+        name LIKE ? OR 
+        email LIKE ? OR 
+        phone_number LIKE ? OR 
+        affiliation LIKE ? OR 
+        category LIKE ? OR 
+        gender LIKE ?`;
+      const likeSearch = `%${search}%`;
+      values = [likeSearch, likeSearch, likeSearch, likeSearch, likeSearch, likeSearch];
+    }
+
+    query += " ORDER BY created_at DESC";
+
+    const [rows] = await db.execute(query, values);
+    res.status(200).json({ data: rows });
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+
 export const getAllHostelRegistrations = async (req, res) => {
   try {
-    const [rows] = await db.execute(`
+    const search = req.query.search || '';
+    const searchQuery = `%${search}%`;
+
+    const [rows] = await db.execute(
+      `
       SELECT h.*, r.name, r.email, r.phone_number 
       FROM hostel_registrations h 
       JOIN registrations r ON h.registration_id = r.id
+      WHERE 
+        r.name LIKE ? OR 
+        r.email LIKE ? OR 
+        r.phone_number LIKE ? OR 
+        h.room_number LIKE ? OR 
+        h.status LIKE ? OR 
+        DATE_FORMAT(h.from_date, '%Y-%m-%d') LIKE ? OR 
+        DATE_FORMAT(h.to_date, '%Y-%m-%d') LIKE ?
       ORDER BY h.created_at DESC
-    `);
+      `,
+      [
+        searchQuery,
+        searchQuery,
+        searchQuery,
+        searchQuery,
+        searchQuery,
+        searchQuery,
+        searchQuery
+      ]
+    );
 
     res.status(200).json({ data: rows });
   } catch (error) {
     console.error("Getting All Hostel Registration failed:", error);
-    return res.status(500).json({ error: "Internal server error." });
+    res.status(500).json({ error: "Internal server error." });
   }
 };
 
+
 export const changeHostelRoomAllocationStatus = async (req, res) => {
   try {
-    const { hostelId, status } = req.body;
+    const { roomNumber, status } = req.body;
+    const { hostelId } = req.params;
 
     if (!hostelId || !["approved", "rejected", "pending"].includes(status)) {
       return res.status(400).json({ error: "Invalid hostel ID or status." });
     }
 
-    await db.execute(
-      "UPDATE hostel_registrations SET status = ? WHERE id = ?",
-      [status, hostelId]
-    );
+    // If status is approved, roomNumber must be provided
+    if (status === "approved" && (!roomNumber || !roomNumber.trim())) {
+      return res.status(400).json({ error: "Room number is required for allocation." });
+    }
 
-    res.status(200).json({ message: "Status updated successfully." });
+    let query = "";
+    let values = [];
+    console.log(status,roomNumber)
+    if (status === "approved") {
+      query = "UPDATE hostel_registrations SET status = ?, room_number = ? WHERE id = ?";
+      values = [status, roomNumber.trim(), hostelId];
+    } else {
+      query = "UPDATE hostel_registrations SET status = ?, room_number = NULL WHERE id = ?";
+      values = [status, hostelId];
+    }
+
+    await db.execute(query, values);
+
+    return res.status(200).json({ message: "Hostel status updated successfully." });
   } catch (error) {
     console.error("Changing Hostel Room Allocation Status failed:", error);
     return res.status(500).json({ error: "Internal server error." });

@@ -1,6 +1,6 @@
 import express from "express";
 import { verifyAdmin } from "../middlewares/verifyAdmin.middleware.js";
-import { changeHostelRoomAllocationStatus, getAllHostelRegistrations, getAllUsers, loginAdmin, registerAdmin } from "../controllers/admin.controller.js";
+import { changeHostelRoomAllocationStatus, getAllHostelRegistrations, getAllUsers, loginAdmin, logout, registerAdmin } from "../controllers/admin.controller.js";
 import { registerValidation } from "../middlewares/validations/admin.validations.middleware.js";
 
 const router = express.Router();
@@ -14,6 +14,10 @@ router.get("/getAllUsers",verifyAdmin,getAllUsers);
 
 router.get("/getAllHostelBookings",verifyAdmin,getAllHostelRegistrations);
 
-router.patch("/changeBookingStatus",verifyAdmin,changeHostelRoomAllocationStatus)
+router.put("/changeBookingStatus/:hostelId",verifyAdmin,changeHostelRoomAllocationStatus);
+
+router.post("/logout",verifyAdmin,logout);
+
+
 
 export default router;
