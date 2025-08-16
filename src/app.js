@@ -28,7 +28,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+app.use("/uploads", express.static("uploads"));
 
 
 app.use("/api/v1/registration", registrationRoute);
@@ -36,5 +37,9 @@ app.use("/api/v1/registration", registrationRoute);
 app.use("/api/v1/hostel", hostelRoute);
 
 app.use("/api/v1/admin", adminRoute);
+
+app.use((req,res)=>{
+  res.send("Not Found")
+})
 
 export default app;

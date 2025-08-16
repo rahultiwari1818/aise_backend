@@ -7,6 +7,7 @@ const feeMap = {
   "industry professional": 2000.00,
 };
 
+
 export const registerUser = async (req, res) => {
   try {
     const {
@@ -17,7 +18,15 @@ export const registerUser = async (req, res) => {
       affiliation,
       category,
       gender,
+      degree,
+      researchArea,
+      transactionId,
     } = req.body;
+
+    // file uploaded via multer
+    const file = req.file;
+        const payment_receipt = file.path.replace(/\\/g, "/");
+
 
     const fees = feeMap[category.toLowerCase()];
     if (fees === undefined) {
@@ -26,8 +35,8 @@ export const registerUser = async (req, res) => {
 
     const query = `
       INSERT INTO registrations 
-      (name, address, email, phone_number, affiliation, category, gender, fees) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      (name, address, email, phone_number, affiliation, category, gender, current_degree, research_area, transaction_id, payment_receipt, fees) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     await db.execute(query, [
@@ -38,6 +47,10 @@ export const registerUser = async (req, res) => {
       affiliation,
       category.toLowerCase(),
       gender.toLowerCase(),
+      category.toLowerCase() === "student" ? degree : null, // only store if student
+      researchArea,
+      transactionId,
+      payment_receipt,
       fees,
     ]);
 
@@ -46,7 +59,9 @@ export const registerUser = async (req, res) => {
     console.error("Registration error:", error);
 
     if (error.code === "ER_DUP_ENTRY") {
-      const duplicateField = error.message.includes("email") ? "email" : "phone number";
+      const duplicateField = error.message.includes("email")
+        ? "email"
+        : "phone number";
       return res.status(409).json({ error: `Duplicate ${duplicateField} detected.` });
     }
 
