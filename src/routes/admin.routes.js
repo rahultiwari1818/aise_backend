@@ -14,6 +14,9 @@ router.get("/getAllUsers",verifyAdmin,getAllUsers);
 
 router.get("/getAllHostelBookings",verifyAdmin,getAllHostelRegistrations);
 
+
+router.get("/getAllGrantRegistrations",verifyAdmin,getAllHostelRegistrations);
+
 router.put("/changeBookingStatus/:hostelId",verifyAdmin,changeHostelRoomAllocationStatus);
 
 router.post("/logout",verifyAdmin,logout);

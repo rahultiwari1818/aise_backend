@@ -1,17 +1,16 @@
-import db from "../../config/db.config.js";
+import UserRegistration from "../../models/registration.model.js";
+import HostelRegistration from "../../models/hostel.model.js";
 
 export const validateHostelRegistration = async (req, res, next) => {
   try {
     const { emailOrPhone, fromDate, toDate } = req.body;
 
-    // Basic field validation
     if (!emailOrPhone || !fromDate || !toDate || !req.file) {
       return res
         .status(400)
         .json({ error: "All fields including ID proof file are required." });
     }
 
-    // Date validation
     const from = new Date(fromDate);
     const to = new Date(toDate);
     const min = new Date("2026-01-06");
@@ -24,31 +23,32 @@ export const validateHostelRegistration = async (req, res, next) => {
       });
     }
 
-    // Check if user exists (by email or phone)
-    const [user] = await db.execute(
-      "SELECT id FROM registrations WHERE email = ? OR phone_number = ? LIMIT 1",
-      [emailOrPhone, emailOrPhone]
-    );
+    // Check if user exists by email or phone
+    const user = await UserRegistration.findOne({
+      $or: [{ email: emailOrPhone }, { phone_number: emailOrPhone }],
+    });
+    
 
-    if (user.length === 0) {
+    if (!user) {
       return res.status(404).json({
         error: "No registered user found with the given email or phone.",
       });
     }
 
-    const [registeredUser] = await db.execute(
-      "select * from hostel_registrations where registration_id = ?",
-      [user[0].id]
-    );
+    // Check if hostel is already booked by this user
+    const registeredUser = await HostelRegistration.findOne({
+      registration_id: user._id,
+    });
 
-    if (registeredUser.length !== 0) {
+
+    if (registeredUser) {
       return res.status(401).json({
-        error: "Hostel Room Already Booked by  Registered User !",
+        error: "Hostel Room Already Booked by Registered User!",
       });
     }
 
-    // Attach registration_id for controller use
-    req.registrationId = user[0].id;
+    // Attach registrationId for controller
+    req.registrationId = user._id;
 
     next();
   } catch (err) {

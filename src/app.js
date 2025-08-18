@@ -3,9 +3,11 @@ import cors from "cors";
 import registrationRoute from "./routes/registration.routes.js";
 import hostelRoute from "./routes/hostel.routes.js";
 import adminRoute from "./routes/admin.routes.js";
+import grantRoute from "./routes/grant.routes.js";
 import cookieParser from "cookie-parser";
 import path from "path";
 import { fileURLToPath } from "url";
+import connectDB from "./config/db.config.js";
 
 
 const app = express();
@@ -38,8 +40,12 @@ app.use("/api/v1/hostel", hostelRoute);
 
 app.use("/api/v1/admin", adminRoute);
 
+app.use("/api/v1/grant",grantRoute);
+
 app.use((req,res)=>{
   res.send("Not Found")
 })
+
+connectDB();
 
 export default app;

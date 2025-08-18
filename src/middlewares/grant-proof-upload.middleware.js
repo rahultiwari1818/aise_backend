@@ -3,7 +3,7 @@ import path from "path";
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "uploads/payment-receipt/");
+    cb(null, "uploads/grant-proofs/");
   },
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname);
@@ -13,7 +13,7 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /pdf/;
+  const allowedTypes = /jpeg|jpg|png|pdf|jpeg/;
   const isValid = allowedTypes.test(path.extname(file.originalname).toLowerCase());
   if (isValid) {
     cb(null, true);
@@ -22,6 +22,6 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-const paymentRecieptUpload = multer({ storage, fileFilter });
+const grantDocUpload = multer({ storage, fileFilter });
 
-export default paymentRecieptUpload;
+export default grantDocUpload;

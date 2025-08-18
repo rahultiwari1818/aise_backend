@@ -1,9 +1,13 @@
-import db from "../config/db.config.js";
+import HostelRegistration from "../models/hostel.model.js";
+import User from "../models/registration.model.js";
 
 export const registerHostel = async (req, res) => {
   try {
-    const { fromDate, toDate } = req.body;
+    const { fromDate, toDate, emailOrPhone } = req.body;
     const file = req.file;
+    const user = await User.findOne({
+      $or: [{ email:emailOrPhone  }, { phone_number: emailOrPhone }],
+    });
 
     const from = new Date(fromDate);
     const to = new Date(toDate);
@@ -11,14 +15,20 @@ export const registerHostel = async (req, res) => {
 
     const idProofPath = file.path.replace(/\\/g, "/");
 
-    await db.execute(
-      `INSERT INTO hostel_registrations 
-        (registration_id, from_date, to_date, days, id_proof, status)
-        VALUES (?, ?, ?, ?, ?, 'pending')`,
-      [req.registrationId, fromDate, toDate, days, idProofPath]
-    );
+    const registration = new HostelRegistration({
+      registration_id: user._id,
+      from_date:fromDate,
+      to_date:toDate,
+      days,
+      id_proof: idProofPath,
+      status: "pending",
+    });
 
-    return res.status(201).json({ message: "Hostel registration submitted successfully." });
+    await registration.save();
+
+    return res
+      .status(201)
+      .json({ message: "Hostel registration submitted successfully." });
   } catch (error) {
     console.error("Hostel registration failed:", error);
     return res.status(500).json({ error: "Internal server error." });
